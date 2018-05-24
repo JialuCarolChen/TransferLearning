@@ -48,17 +48,17 @@ class TransLearn(object):
         predictions = Dense(num_class, activation="softmax", name='new_dense_layer')(x)
         model = Model(input=base_model.input, output=predictions)
         model.compile(loss="categorical_crossentropy", metrics=["accuracy"],
-                      optimizer=optimizers.SGD(lr=0.001, momentum=0.9))
+                      optimizer=optimizers.SGD(lr=lr, momentum=0.9))
 
         # data augmentation
         # create generator for augmenting training data
         train_datagen = ImageDataGenerator(featurewise_center=True,
-                                           featurewise_std_normalization=True,
-                                           horizontal_flip=True,
-                                           zoom_range=0.3,
-                                           width_shift_range=0.3,
-                                           height_shift_range=0.3,
-                                           rotation_range=45)
+                                           zoom_range=0.2,
+                                           shear_range=0.2,
+                                           rescale=1./255,
+                                           width_shift_range=0.2,
+                                           height_shift_range=0.2,
+                                           rotation_range=40)
 
 
         #fit data with train_datagen

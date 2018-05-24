@@ -16,7 +16,7 @@ class ImageLoader:
 
         # specify image size
         # input image shape for inception and inception resnet model
-        if model_type.lower() == 'vgg':
+        if model_type.lower() == 'vgg' or 'restnet':
             self.img_shape = (224, 224)
         # input image shape for inception and inception resnet model
         elif model_type.lower() == 'inception':
@@ -64,6 +64,7 @@ class ImageLoader:
             for line in f:
                 line = line.strip('\n').split(' ')
                 if line:
+                    print(line)
                     image = line[0]
                     Y_train.append(int(line[1]))
                     img_path = self.file_path + 'vali-set/' + image
@@ -87,8 +88,8 @@ class ImageLoader:
 
 
 
-il = ImageLoader("/Users/chenjialu/Desktop/DL_Assignment2/Assignment-2-Dataset-Round-1/", model_type='inception')
-X_train, Y_train = il.load_train()
+#il = ImageLoader("/Users/chenjialu/Desktop/DL_Assignment2/Assignment-2-Dataset-Round-1/", model_type='inception')
+#X_train, Y_train = il.load_train()
 #X_valid, Y_valid = il.load_valid()
 #Y_train = il.onehot_encode(Y_train)
 #Y_valid = il.onehot_encode(Y_valid)
