@@ -6,9 +6,9 @@ import time
 from TransferLearn import TransLearn
 
 # loading the data
-il = ImageLoader("/Users/chenjialu/Desktop/DL_Assignment2/Assignment-2-Dataset-Round-1/", model_type='inception')
-X_train, Y_train = il.load_train()
-X_valid, Y_valid = il.load_valid()
+il = ImageLoader("/home/ubuntu/Assignment-2-Dataset-Round-1/", model_type='inception')
+X_train, Y_train = il.load_train(37882)
+X_valid, Y_valid = il.load_valid(6262)
 # one hot encode
 Y_train = il.onehot_encode(Y_train)
 Y_valid = il.onehot_encode(Y_valid)
