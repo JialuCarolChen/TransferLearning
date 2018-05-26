@@ -37,6 +37,7 @@ tl.plot_predict(model)
 # get validation data
 il = ImageLoader("/home/ubuntu/Assignment-2-Dataset-Round-1/", model_type='inception')
 X_valid, Y_valid = il.load_valid(6262)
+Y_valid = il.onehot_encode(Y_valid)
 # store prediction result
 tl.predict_store(X_valid, Y_valid, model)
 

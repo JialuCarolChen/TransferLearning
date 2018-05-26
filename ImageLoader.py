@@ -39,9 +39,9 @@ class ImageLoader:
                 # turn image to numpy array
                 img = load_img(img_path)  # this is a PIL image
                 img = img_to_array(img)
+                img = img/255
                 # print(img.shape)
                 # convert to integer
-                img = img.astype(int)
                 # resize to fit in pre-trained model
                 img = resize(img, self.img_shape)
                 X_train[i,:] = img
@@ -67,10 +67,10 @@ class ImageLoader:
                 # turn image to numpy array
                 img = load_img(img_path)  # this is a PIL image
                 img = img_to_array(img)
-                # convert to integer
-                img = img.astype(int)
+                img = img/255
                 # resize to fit in pre-trained model
                 img = resize(img, self.img_shape)
+                print(img)
                 X_train[i, :] = img
 
         print("Read in validating/testing data with dimensions: " + str(X_train.shape))
