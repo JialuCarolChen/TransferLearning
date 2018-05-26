@@ -60,7 +60,6 @@ class ImageLoader:
         with open(self.file_path + 'vali.txt', 'r') as f:
             for i, line in enumerate(f):
                 line = line.strip('\n').split(' ')
-
                 # print(line)
                 image = line[0]
                 Y_train[i] = int(line[1])

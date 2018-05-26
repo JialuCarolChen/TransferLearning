@@ -1,5 +1,13 @@
-To run the code on AWS
 
+To run the code:
+Step 1: run DataConvert.py to make directory
+Step 2: run train_flow_TransferLearning.py
+
+
+
+
+
+To run the code on AWS
 1. Connecting to the server:
 open terminal:
 cd /Users/chenjialu/Desktop/AWS/ (path of the key file)
