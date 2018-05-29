@@ -46,7 +46,6 @@ class ImageLoader:
                 img = resize(img, self.img_shape)
                 X_train[i,:] = img
 
-
         print("Read in training data with dimensions: " + str(X_train.shape))
         print("Read in training labels with dimensions: "+ str(Y_train.shape))
         return X_train, Y_train
@@ -82,22 +81,5 @@ class ImageLoader:
 
 
 
-#il = ImageLoader("/Users/chenjialu/Desktop/DL_Assignment2/Assignment-2-Dataset-Round-1/", model_type='inception')
-#X_train, Y_train = il.load_train(37882)
-#X_valid, Y_valid = il.load_valid(6262)
-#Y_train = il.onehot_encode(Y_train)
-#Y_valid = il.onehot_encode(Y_valid)
 
 
-
-"""
-def make_batch(files, labels, batchsize, img_dim):
-    files,labels = shuffle(files,labels)
-    while 1:
-        for i in range(0, len(files), batchsize):
-            batchX = files[i:i+batchsize]
-            batchY = np.array(labels[i:i+batchsize][:])
-            batchX = np.array([parse_image(Image.open(fname), img_dim)/255 for fname in batchX])
-            yield(batchX, batchY)
-
-"""

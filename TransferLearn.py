@@ -1,4 +1,5 @@
 from keras import optimizers
+import json
 from keras.models import Model
 from keras.layers import Flatten, Dense, Dropout
 from PIL import Image
@@ -110,8 +111,6 @@ class TransLearn(object):
 
 
 
-
-
     def fine_tune_fit_flow(self, dir_path, base_model, model_type, num_class,
                       freeze_num=-1, epoch=1, batch_size=128, lr=0.001):
         """
@@ -168,7 +167,8 @@ class TransLearn(object):
         sample_train = self.sample_train(dir_path, 100)
         train_datagen.fit(sample_train)
 
-        test_datagen = ImageDataGenerator(rescale=1./255)
+        test_datagen = ImageDataGenerator(featurewise_center=True, rescale=1./255)
+        test_datagen.fit(sample_train)
 
         train_generator = train_datagen.flow_from_directory(dir_path+'train', target_size=self.img_shape, batch_size=batch_size)
         valid_generator = test_datagen.flow_from_directory(dir_path+'validation', target_size=self.img_shape, batch_size=batch_size)
@@ -180,6 +180,15 @@ class TransLearn(object):
         # save entire model, including architecture, weights, training configuration and state of optimizer
         # can be loaded again to resume training if necessary
         model.save(self.name+'_model.h5')
+
+        # get a map from real label to prediction
+        label_map = (train_generator.class_indices)
+        # swap value and key, map from prediction to real label
+        label_map = dict((v, k) for k, v in label_map.items())
+        # store the label map
+        with open('label_map.json', 'w') as fp:
+            json.dump(label_map, fp)
+
         return model
 
 
@@ -231,6 +240,6 @@ class TransLearn(object):
         out = DataFrame(predictions)
         out["pred"] = pred
         out["gold"] = gold
-        out.to_csv(self.name+"_predictions.csv", header=True)
+        out.to_csv(self.name + "_predictions.csv", header=True)
 
 
