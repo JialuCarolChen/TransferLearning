@@ -2,12 +2,11 @@ from keras import optimizers
 import json
 from keras.models import Model
 from keras.layers import Flatten, Dense, Dropout
-from PIL import Image
+from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.preprocessing.image import ImageDataGenerator
 from skimage.transform import resize
 from keras.preprocessing.image import array_to_img, img_to_array, load_img
 import matplotlib.pyplot as plt
-import os
 from pandas import DataFrame
 import numpy as np
 
@@ -173,13 +172,19 @@ class TransLearn(object):
         train_generator = train_datagen.flow_from_directory(dir_path+'train', target_size=self.img_shape, batch_size=batch_size)
         valid_generator = test_datagen.flow_from_directory(dir_path+'validation', target_size=self.img_shape, batch_size=batch_size)
 
+        # check point: save the model with the best accuracy
+        model_path = self.name + '_model.h5'
+        check_point = ModelCheckpoint(model_path, monitor='val_acc', save_best_only=True, mode = 'max')
+        # early stopping
+        early_stop = EarlyStopping(monitor='val_acc', patience=5, mode='max')
+
         # train model using data augmentation with datagen
-        model.fit_generator(train_generator, validation_data=valid_generator, epochs=epoch)
+        model.fit_generator(train_generator, validation_data=valid_generator, epochs=epoch, callbacks=[check_point, early_stop])
 
         # methods to save model: https://stackoverflow.com/a/47271117/8452935
         # save entire model, including architecture, weights, training configuration and state of optimizer
         # can be loaded again to resume training if necessary
-        model.save(self.name+'_model.h5')
+        # model.save(self.name+'_model.h5')
 
         # get a map from real label to prediction
         label_map = (train_generator.class_indices)
