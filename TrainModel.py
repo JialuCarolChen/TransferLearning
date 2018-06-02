@@ -1,81 +1,28 @@
 from keras import optimizers
 from keras.models import Model
-from keras.layers import Flatten, Dense, Dropout
+from keras.layers import Flatten, Dense, Dropout, BatchNormalization
 from keras.callbacks import EarlyStopping, ModelCheckpoint
+from keras.applications import VGG16, VGG19, ResNet50, Xception
 from keras.preprocessing.image import ImageDataGenerator
 from skimage.transform import resize
 from keras.preprocessing.image import array_to_img, img_to_array, load_img
-import matplotlib.pyplot as plt
 from pandas import DataFrame
+from clr_callback import CyclicLR
+import matplotlib.pyplot as plt
 import numpy as np
 import json
+import math
 import os
 
-class TransLearn(object):
+class TrainModel(object):
 
     def __init__(self, name):
         """
-        :param name:
+        A class to train a single model
+        :param name: name of the model (for specify file name)
         """
         self.name = name
 
-
-
-    def fine_tune_fit(self, X_train, Y_train, X_val, Y_val, base_model, num_class,
-                      freeze_num=-1, epoch=1, batch_size=128, lr=0.001):
-        """
-        A function to train transfer learning model from reading in the whole dataset
-        :param base_model: pre-trained model
-        :param num_classes: number of classes in the softmax layer
-        :param freeze_num: number of layers to freeze, if not specified fine tune all layers
-        :param epoch: number of epochs to train the model
-        :param batch_size: batch size for mini-batch training
-        :param lr: learning rate for use in optimizers
-        :return: the final model
-        """
-
-        self.batch_size = batch_size
-
-        if freeze_num != -1:
-            # freeze the first freeze_num number of layers, fine-tune all the other layers
-            for layer in base_model.layers[:freeze_num]:
-                layer.trainable = False
-
-
-        x = base_model.output
-
-        x = Flatten()(x)
-        # the number of units in the dense layer is 1024
-        x = Dense(1024, activation="relu")(x)
-        x = Dropout(0.5)(x)
-        predictions = Dense(num_class, activation="softmax", name='new_dense_layer')(x)
-        model = Model(input=base_model.input, output=predictions)
-        model.compile(loss="categorical_crossentropy", metrics=["accuracy"],
-                      optimizer=optimizers.SGD(lr=lr, momentum=0.9))
-
-        # data augmentation
-        # create generator for augmenting training data
-        train_datagen = ImageDataGenerator(featurewise_center=True,
-                                           zoom_range=0.2,
-                                           shear_range=0.2,
-                                           rescale=1./255,
-                                           width_shift_range=0.2,
-                                           height_shift_range=0.2,
-                                           rotation_range=40)
-
-
-        #fit data with train_datagen
-        train_datagen.fit(X_train)
-
-        # train model using data augmentation with datagen
-        model.fit_generator(train_datagen.flow(X_train, Y_train, batch_size=batch_size),
-                            validation_data=(X_val, Y_val), epochs=epoch)
-
-        # methods to save model: https://stackoverflow.com/a/47271117/8452935
-        # save entire model, including architecture, weights, training configuration and state of optimizer
-        # can be loaded again to resume training if necessary
-        model.save(self.name+'_model.h5')
-        return model
 
     def sample_train(self, dir_path, sample_size):
         """A function to create sample data to fit train_datagen
@@ -111,48 +58,54 @@ class TransLearn(object):
 
 
 
-    def fine_tune_fit_flow(self, dir_path, base_model, model_type, num_class,
-                      freeze_num=-1, epoch=1, batch_size=128, lr=0.001):
+    def train_flow(self, dir_path, model_type, num_class, epoch = 90, batch_size=128, lr=0.001, clr = True):
         """
         A function to train transfer learning model from reading in data on fly (flow from directory)
         :param dir_path: the directory of where the image store
         :param base_model: pre-trained model
-        :param model_type: type of model
+        :param model_type: type of model, available option: restnet50, vgg16, vgg19, Xception
         :param num_class: number of classes in the softmax layer
         :param freeze_num: number of layers to freeze, if not specified fine tune all layers
-        :param epoch: number of epochs to train the model
+        :param epoch: number of epochs to train the model, if epoch = -1, use early stopping
         :param batch_size: batch size for mini-batch training
         :param lr: learning rate for use in optimizers
         :return: the final model
         """
         # specify image size
         # input image shape for inception and inception resnet model
-        if model_type.lower() == 'vgg' or model_type.lower() == 'restnet':
+
+        if model_type.lower() == 'vgg16':
             self.img_shape = (224, 224)
-        # input image shape for inception and inception resnet model
-        elif model_type.lower() == 'inception':
+            base_model = VGG16(include_top=False, weights=None, input_shape=(224, 224, 3))
+        elif model_type.lower() == 'vgg19':
+            self.img_shape = (224, 224)
+            base_model = VGG19(include_top=False, weights=None, input_shape=(224, 224, 3))
+        elif model_type.lower() == 'restnet50':
+            print("hellp")
+            self.img_shape = (224, 224)
+            base_model = ResNet50(include_top=False, weights=None, input_shape=(224, 224, 3))
+        elif model_type.lower() == 'xception':
             self.img_shape = (299, 299)
+            base_model = Xception(include_top=False, weights=None, input_shape=(299, 299, 3))
         else:
-            raise ValueError("Error: pretrain model name not valid!")
+            raise ValueError("Error: model name not valid!")
 
         self.batch_size = batch_size
-
-        if freeze_num != -1:
-            # freeze the first freeze_num number of layers, fine-tune all the other layers
-            for layer in base_model.layers[:freeze_num]:
-                layer.trainable = False
-
 
         x = base_model.output
 
         x = Flatten()(x)
         # the number of units in the dense layer is 1024
         x = Dense(1024, activation="relu")(x)
-        x = Dropout(0.5)(x)
+        x = Dropout(0.2)(x)
+        x = BatchNormalization()(x)
+        x = Dense(256, activation="relu")(x)
+        x = Dropout(0.2)(x)
+        x = BatchNormalization()(x)
         predictions = Dense(num_class, activation="softmax", name='new_dense_layer')(x)
         model = Model(input=base_model.input, output=predictions)
         model.compile(loss="categorical_crossentropy", metrics=["accuracy"],
-                      optimizer=optimizers.SGD(lr=lr, momentum=0.9))
+                      optimizer=optimizers.Adam())
 
         # data augmentation
         # create generator for augmenting training data
@@ -162,7 +115,7 @@ class TransLearn(object):
                                            rescale=1./255,
                                            width_shift_range=0.2,
                                            height_shift_range=0.2,
-                                           rotation_range=40)
+                                           rotation_range=30)
         # fit the train_datagen (compute statistics for pre-processing) with some sample training data
         sample_train = self.sample_train(dir_path, 100)
         train_datagen.fit(sample_train)
@@ -173,14 +126,23 @@ class TransLearn(object):
         train_generator = train_datagen.flow_from_directory(dir_path+'train', target_size=self.img_shape, batch_size=batch_size)
         valid_generator = test_datagen.flow_from_directory(dir_path+'validation', target_size=self.img_shape, batch_size=batch_size)
 
-        # check point: save the model with the best accuracy
+
+        # Check point: save the model with the best accuracy
         model_path = self.name + '_model.h5'
         check_point = ModelCheckpoint(model_path, monitor='val_acc', save_best_only=True, mode = 'max')
-        # early stopping
-        early_stop = EarlyStopping(monitor='val_acc', patience=5, mode='max')
 
-        # train model using data augmentation with datagen
-        model.fit_generator(train_generator, validation_data=valid_generator, epochs=epoch, callbacks=[check_point, early_stop])
+        callback_list = [check_point]
+
+        # if clr = True, use Cyclical Learning rate
+        if clr == True:
+            clr_stepsize = 2 * math.ceil(37882 / batch_size)
+            clr_triangular = CyclicLR(mode='triangular', base_lr=lr, max_lr=6*lr, step_size=clr_stepsize)
+            callback_list.append(clr_triangular)
+
+        # use Early Stoppinp
+        early_stop = EarlyStopping(monitor='val_acc', patience=8, mode='max')
+        callback_list.append(early_stop)
+        model.fit_generator(train_generator, validation_data=valid_generator, epochs=epoch, callbacks=callback_list)
 
         # methods to save model: https://stackoverflow.com/a/47271117/8452935
         # save entire model, including architecture, weights, training configuration and state of optimizer
