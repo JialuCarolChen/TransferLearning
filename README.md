@@ -1,11 +1,11 @@
+To be completed...
+
+
 
 To run the code:
+
 Step 1: run DataConvert.py to make directory
 Step 2: run train_flow_TransferLearning.py
-
-
-
-
 
 To run the code on AWS
 1. Connecting to the server:
