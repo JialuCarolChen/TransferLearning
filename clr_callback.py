@@ -1,10 +1,35 @@
+# This script is created by Bradley Kenstler and downloaded from https://github.com/bckenstler/CLR
+
+# MIT License
+#
+# Copyright (c) 2017 Bradley Kenstler
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 from keras.callbacks import *
+
 
 class CyclicLR(Callback):
     """This callback implements a cyclical learning rate policy (CLR).
     The method cycles the learning rate between two boundaries with
     some constant frequency, as detailed in this paper (https://arxiv.org/abs/1506.01186).
-    The amplitude of the cycle can be scaled on a per-iteration or 
+    The amplitude of the cycle can be scaled on a per-iteration or
     per-cycle basis.
     This class has three built-in policies, as put forth in the paper.
     "triangular":
@@ -12,17 +37,17 @@ class CyclicLR(Callback):
     "triangular2":
         A basic triangular cycle that scales initial amplitude by half each cycle.
     "exp_range":
-        A cycle that scales initial amplitude by gamma**(cycle iterations) at each 
+        A cycle that scales initial amplitude by gamma**(cycle iterations) at each
         cycle iteration.
     For more detail, please see paper.
-    
+
     # Example
         ```python
             clr = CyclicLR(base_lr=0.001, max_lr=0.006,
                                 step_size=2000., mode='triangular')
             model.fit(X_train, Y_train, callbacks=[clr])
         ```
-    
+
     Class also supports custom scaling functions:
         ```python
             clr_fn = lambda x: 0.5*(1+np.sin(x*np.pi/2.))
@@ -30,14 +55,14 @@ class CyclicLR(Callback):
                                 step_size=2000., scale_fn=clr_fn,
                                 scale_mode='cycle')
             model.fit(X_train, Y_train, callbacks=[clr])
-        ```    
+        ```
     # Arguments
         base_lr: initial learning rate which is the
             lower boundary in the cycle.
         max_lr: upper boundary in the cycle. Functionally,
             it defines the cycle amplitude (max_lr - base_lr).
             The lr at any cycle is the sum of base_lr
-            and some scaling of the amplitude; therefore 
+            and some scaling of the amplitude; therefore
             max_lr may not actually be reached depending on
             scaling function.
         step_size: number of training iterations per
@@ -50,11 +75,11 @@ class CyclicLR(Callback):
         gamma: constant in 'exp_range' scaling function:
             gamma**(cycle iterations)
         scale_fn: Custom scaling policy defined by a single
-            argument lambda function, where 
+            argument lambda function, where
             0 <= scale_fn(x) <= 1 for all x >= 0.
-            mode paramater is ignored 
+            mode paramater is ignored
         scale_mode: {'cycle', 'iterations'}.
-            Defines whether scale_fn is evaluated on 
+            Defines whether scale_fn is evaluated on
             cycle number or cycle iterations (training
             iterations since start of cycle). Default is 'cycle'.
     """
@@ -73,10 +98,10 @@ class CyclicLR(Callback):
                 self.scale_fn = lambda x: 1.
                 self.scale_mode = 'cycle'
             elif self.mode == 'triangular2':
-                self.scale_fn = lambda x: 1/(2.**(x-1))
+                self.scale_fn = lambda x: 1 / (2. ** (x - 1))
                 self.scale_mode = 'cycle'
             elif self.mode == 'exp_range':
-                self.scale_fn = lambda x: gamma**(x)
+                self.scale_fn = lambda x: gamma ** (x)
                 self.scale_mode = 'iterations'
         else:
             self.scale_fn = scale_fn
@@ -99,25 +124,26 @@ class CyclicLR(Callback):
         if new_step_size != None:
             self.step_size = new_step_size
         self.clr_iterations = 0.
-        
+
     def clr(self):
-        cycle = np.floor(1+self.clr_iterations/(2*self.step_size))
-        x = np.abs(self.clr_iterations/self.step_size - 2*cycle + 1)
+        cycle = np.floor(1 + self.clr_iterations / (2 * self.step_size))
+        x = np.abs(self.clr_iterations / self.step_size - 2 * cycle + 1)
         if self.scale_mode == 'cycle':
-            return self.base_lr + (self.max_lr-self.base_lr)*np.maximum(0, (1-x))*self.scale_fn(cycle)
+            return self.base_lr + (self.max_lr - self.base_lr) * np.maximum(0, (1 - x)) * self.scale_fn(cycle)
         else:
-            return self.base_lr + (self.max_lr-self.base_lr)*np.maximum(0, (1-x))*self.scale_fn(self.clr_iterations)
-        
+            return self.base_lr + (self.max_lr - self.base_lr) * np.maximum(0, (1 - x)) * self.scale_fn(
+                self.clr_iterations)
+
     def on_train_begin(self, logs={}):
         logs = logs or {}
 
         if self.clr_iterations == 0:
             K.set_value(self.model.optimizer.lr, self.base_lr)
         else:
-            K.set_value(self.model.optimizer.lr, self.clr())        
-            
+            K.set_value(self.model.optimizer.lr, self.clr())
+
     def on_batch_end(self, epoch, logs=None):
-        
+
         logs = logs or {}
         self.trn_iterations += 1
         self.clr_iterations += 1
@@ -127,5 +153,5 @@ class CyclicLR(Callback):
 
         for k, v in logs.items():
             self.history.setdefault(k, []).append(v)
-        
+
         K.set_value(self.model.optimizer.lr, self.clr())

@@ -1,7 +1,12 @@
 import os
+import sys
 from shutil import copyfile
 
-dir_path = "/Users/chenjialu/Desktop/DL_Assignment2/Assignment-2-Dataset-Round-1/"
+
+########################################################################################################
+#     A script to convert data (local files) to match with keras flow from directory structure         #
+#######################################################################################################
+
 # if not os.path.exists(os.pardir.dirname(dir_path+'Data'))
 
 def create_dir(dir_path):
@@ -49,7 +54,18 @@ def convert_dir(dir_path):
             copyfile(src_path, target_path)
             print("copy file to: " + target_path)
 
-convert_dir(dir_path)
+
+
+def main():
+    print("Loading data from path: ", sys.argv[0])
+    dir_path = sys.argv[0]
+    convert_dir(dir_path)
+
+
+if __name__=="__main__":
+    main()
+
+
 
 
 
